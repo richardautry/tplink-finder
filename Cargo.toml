@@ -5,9 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [lib]
 name = "greetings"
 crate-type = ["staticlib", "cdylib"]
 
-# [dependencies]
-# # tplinker = "0.4.4"
+[dependencies]
+tplinker = "0.4.4"
