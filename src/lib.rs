@@ -1,11 +1,19 @@
+use std::net::SocketAddr;
 use std::os::raw::{c_char, c_uint, c_void};
 use std::ffi::{CString, CStr};
 use tplinker::{
     discovery::discover,
     devices::Device,
     capabilities::DeviceActions,
-    datatypes::DeviceData
+    datatypes::DeviceData,
+    datatypes::SysInfo
 };
+
+pub struct FullDevice {
+    device: Device,
+    device_data: DeviceData,
+    addr: SocketAddr
+}
 
 #[no_mangle]
 pub extern fn rust_greeting(to: *const c_char) -> *mut c_char {
@@ -61,6 +69,25 @@ pub extern "C" fn tplinker_discovery(len: *mut c_uint) -> *mut c_void {
 }
 
 #[no_mangle]
+pub extern "C" fn tplinker_device_discovery(len: *mut c_uint) -> *mut c_void {
+    let mut full_devices: Vec<*mut _> = Vec::new();
+    for (addr, data) in discover().unwrap() {
+        let device: Device = Device::from_data(addr, &data);
+        let full_device: FullDevice = FullDevice {
+            device: device,
+            device_data: data,
+            addr: addr
+        };
+        full_devices.push(Box::into_raw(Box::new(full_device)))
+    }
+    let slice = full_devices.into_boxed_slice();
+    unsafe {
+        *len = slice.len() as c_uint;
+    }
+    Box::into_raw(slice) as *mut c_void
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn tplinker_vec_destroy(tplinker_vec: *mut i8) {
     let _ = Box::from_raw(tplinker_vec);
 }
@@ -74,5 +101,26 @@ pub unsafe extern "C" fn device_data_get_alias(device_data: *const DeviceData) -
     // let alias = sys_info.alias.clone();
     // let alias: String = device_data.sysinfo().alias.clone();
     // println!("RETURNING {:?} FOR DEVICE", alias);
+    CString::new(sys_info.alias.clone()).unwrap().into_raw()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn device_data_get_mac_address(device_data: *const DeviceData) -> *mut c_char {
+    let device_data: &DeviceData = &*device_data;
+    let sys_info: &SysInfo = device_data.sysinfo();
     CString::new(sys_info.mac.clone()).unwrap().into_raw()
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn full_device_get_alias(full_device: *const FullDevice) -> *mut c_char {
+    let full_device: &FullDevice = &*full_device;
+    let sys_info: &SysInfo = full_device.device_data.sysinfo();
+    CString::new(sys_info.alias.clone()).unwrap().into_raw()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn full_device_get_addr(full_device: *const FullDevice) -> *mut c_char {
+    let full_device: &FullDevice = &*full_device;
+    CString::new(format!("{}", full_device.addr)).unwrap().into_raw()
+}
+// TODO: Add device turn on / off
