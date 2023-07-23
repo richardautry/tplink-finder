@@ -4,10 +4,13 @@ use std::ffi::{CString, CStr};
 use tplinker::{
     discovery::discover,
     devices::Device,
-    capabilities::DeviceActions,
+    capabilities::{DeviceActions, Switch, },
     datatypes::DeviceData,
-    datatypes::SysInfo
+    datatypes::SysInfo,
+    error::{Error, Result},
 };
+use serde_json::json;
+use serde::de::DeserializeOwned;
 
 pub struct FullDevice {
     device: Device,
@@ -123,4 +126,98 @@ pub unsafe extern "C" fn full_device_get_addr(full_device: *const FullDevice) ->
     let full_device: &FullDevice = &*full_device;
     CString::new(format!("{}", full_device.addr)).unwrap().into_raw()
 }
+
 // TODO: Add device turn on / off
+#[no_mangle]
+pub unsafe extern "C" fn full_device_is_on(full_device: *const FullDevice) -> bool {
+    let full_device: &FullDevice = &*full_device;
+    let device = &full_device.device;
+    match &full_device.device {
+        Device::HS100(device) => { device.is_on().unwrap() },
+        Device::Unknown(device) => { 
+            full_device.device_data.sysinfo()
+            .relay_state
+            .map_or(Err(Error::from("No relay state")), |relay_state: u8| {
+                Ok(relay_state > 0)
+            })
+         }.unwrap(),
+        _ => false
+    }
+}
+
+// fn check_command_error(value: &serde_json::Value, pointer: &str) -> bool {
+//     if let Some(err_code) = value.pointer(pointer) {
+//         if err_code == 0 {
+//             true
+//         } else {
+//             false
+//         }
+//     } else {
+//         false
+//     }
+// }
+
+// impl DeviceActions for Device {
+//     fn send<D: DeserializeOwned>(&self, msg: &str) -> bool {
+//         match self {
+//             Device::Unknown(d) => d.send(msg),
+//             _ => {}
+//         }
+//     }
+// }
+
+fn check_command_error(value: &serde_json::Value, pointer: &str) -> Result<()> {
+    if let Some(err_code) = value.pointer(pointer) {
+        if err_code == 0 {
+            Ok(())
+        } else {
+            Err(Error::from(format!("Invalid error code {}", err_code)))
+        }
+    } else {
+        Err(Error::from(format!("Invalid response format: {}", value)))
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn full_device_switch_off(full_device: *const FullDevice) -> bool {
+    let full_device: &FullDevice = &*full_device;
+    let device = &full_device.device;
+    match device {
+        Device::Unknown(device) => {
+            let command = json!({
+                "system": {"set_relay_state": {"state": 0}}
+            }).to_string();
+            let result = check_command_error(
+                &device.send(&command).unwrap(),
+                "/system/set_relay_state/err_code",
+            );
+            match result {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        },
+        _ => false
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn full_device_switch_on(full_device: *const FullDevice) -> bool {
+    let full_device: &FullDevice = &*full_device;
+    let device = &full_device.device;
+    match device {
+        Device::Unknown(device) => {
+            let command = json!({
+                "system": {"set_relay_state": {"state": 1}}
+            }).to_string();
+            let result = check_command_error(
+                &device.send(&command).unwrap(),
+                "/system/set_relay_state/err_code",
+            );
+            match result {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        },
+        _ => false
+    }
+}

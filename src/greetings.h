@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 struct device_data;
 struct full_device;
@@ -12,3 +13,6 @@ const char* _Nonnull device_data_get_alias(const struct device_data* _Nonnull de
 const struct full_device*_Nonnull *tplinker_device_discovery(unsigned int *len);
 const char* _Nonnull full_device_get_alias(const struct full_device* _Nonnull full_device);
 const char* _Nonnull full_device_get_addr(const struct full_device* _Nonnull full_device);
+const bool full_device_is_on(const struct full_device* _Nonnull full_device);
+const bool full_device_switch_off(const struct full_device* _Nonnull full_device);
+const bool full_device_switch_on(const struct full_device* _Nonnull full_device);
