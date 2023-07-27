@@ -10,7 +10,6 @@ use tplinker::{
     error::{Error, Result},
 };
 use serde_json::json;
-use serde::de::DeserializeOwned;
 
 pub struct FullDevice {
     device: Device,
@@ -131,11 +130,16 @@ pub unsafe extern "C" fn full_device_get_addr(full_device: *const FullDevice) ->
 #[no_mangle]
 pub unsafe extern "C" fn full_device_is_on(full_device: *const FullDevice) -> bool {
     let full_device: &FullDevice = &*full_device;
-    let device = &full_device.device;
+
     match &full_device.device {
         Device::HS100(device) => { device.is_on().unwrap() },
         Device::Unknown(device) => { 
-            full_device.device_data.sysinfo()
+            let sys_info = match full_device.device.sysinfo() {
+                Ok(sys_info) => sys_info,
+                Err(e) => return false
+            };
+
+            sys_info
             .relay_state
             .map_or(Err(Error::from("No relay state")), |relay_state: u8| {
                 Ok(relay_state > 0)
@@ -144,27 +148,6 @@ pub unsafe extern "C" fn full_device_is_on(full_device: *const FullDevice) -> bo
         _ => false
     }
 }
-
-// fn check_command_error(value: &serde_json::Value, pointer: &str) -> bool {
-//     if let Some(err_code) = value.pointer(pointer) {
-//         if err_code == 0 {
-//             true
-//         } else {
-//             false
-//         }
-//     } else {
-//         false
-//     }
-// }
-
-// impl DeviceActions for Device {
-//     fn send<D: DeserializeOwned>(&self, msg: &str) -> bool {
-//         match self {
-//             Device::Unknown(d) => d.send(msg),
-//             _ => {}
-//         }
-//     }
-// }
 
 fn check_command_error(value: &serde_json::Value, pointer: &str) -> Result<()> {
     if let Some(err_code) = value.pointer(pointer) {
