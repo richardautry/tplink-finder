@@ -10,6 +10,7 @@ use tplinker::{
     error::{Error, Result},
 };
 use serde_json::json;
+use std::{thread, time};
 
 pub struct FullDevice {
     device: Device,
@@ -203,4 +204,11 @@ pub unsafe extern "C" fn full_device_switch_on(full_device: *const FullDevice) -
         },
         _ => false
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn test_sleep(length_ms: u64) -> bool {
+    let duration = time::Duration::from_millis(length_ms);
+    thread::sleep(duration);
+    true
 }
