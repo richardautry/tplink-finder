@@ -17,3 +17,4 @@ const bool full_device_is_on(const struct full_device* _Nonnull full_device);
 const bool full_device_switch_off(const struct full_device* _Nonnull full_device);
 const bool full_device_switch_on(const struct full_device* _Nonnull full_device);
 const bool test_sleep(const int length_ms);
+const bool turn_off_after(const int length_ms, const struct full_device* _Nonnull full_device);
