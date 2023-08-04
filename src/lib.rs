@@ -208,18 +208,9 @@ pub unsafe extern "C" fn full_device_switch_on(full_device: *const FullDevice) -
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn test_sleep(length_ms: u64) -> bool {
-    let duration = time::Duration::from_millis(length_ms);
-    // TODO:
-    // Take reference to device as arg
-    // After sleep duration, turn off the device
-    thread::sleep(duration);
-    true
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn turn_off_after(length_ms: u64, full_device: *const FullDevice) -> bool {
     let duration: Duration = time::Duration::from_millis(length_ms);
+    // TODO: Write a futures version of this that allows us to poll current time elapsed in timer
     thread::sleep(duration);
     full_device_switch_off(full_device)
 }
