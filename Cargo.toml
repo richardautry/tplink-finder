@@ -1,16 +1,17 @@
 [package]
-name = "tplink-finder"
+name = "greetings"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-
 [lib]
 name = "greetings"
-crate-type = ["staticlib", "cdylib"]
+path = "src/lib.rs"
+# crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 serde = "1.0.174"
 serde_json = "1.0.103"
 tplinker = "0.4.4"
+tokio = { version = "1", features = ["full"] }

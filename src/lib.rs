@@ -10,13 +10,18 @@ use tplinker::{
     error::{Error, Result},
 };
 use serde_json::json;
-use std::{thread, time};
-use std::time::Duration;
+use std::{thread};
+use std::time::{Duration, SystemTime};
+use tokio::time;
 
 pub struct FullDevice {
     device: Device,
     device_data: DeviceData,
     addr: SocketAddr
+}
+
+pub struct Timer {
+    pub seconds: u64,
 }
 
 #[no_mangle]
@@ -213,4 +218,17 @@ pub unsafe extern "C" fn turn_off_after(length_ms: u64, full_device: *const Full
     // TODO: Write a futures version of this that allows us to poll current time elapsed in timer
     thread::sleep(duration);
     full_device_switch_off(full_device)
+}
+
+pub async fn start_timer(length_ms: u64, timer: &mut Timer) {
+    let duration: Duration = time::Duration::from_millis(length_ms);
+    let mut now = SystemTime::now();
+    let end_time = now + duration;
+    let mut interval = time::interval(time::Duration::from_secs(1));
+
+    while now.elapsed().expect("").as_secs() < duration.as_secs() {
+        interval.tick().await;
+        timer.seconds = now.elapsed().expect("Woops wrong time").as_secs();
+        println!("{}", timer.seconds);
+    }
 }
