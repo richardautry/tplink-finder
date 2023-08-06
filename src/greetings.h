@@ -22,4 +22,4 @@ const bool turn_off_after(const int length_ms, const struct full_device* _Nonnul
 const struct timer* get_timer(const unsigned int length_ms);
 const unsigned int poll_timer(const struct timer* _Nonnull timer);
 const bool start_timer(const int length_ms, struct timer * _Nonnull timer);
-const ffifuture* start_timer_test(const int length_ms);
+// const ffifuture* start_timer_test(const int length_ms);

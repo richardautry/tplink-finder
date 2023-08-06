@@ -258,26 +258,26 @@ pub fn start_timer_async(length_ms: u64, timer: &mut Timer) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn start_timer_test(length_ms: u64, elapsed: *mut u64) -> FfiFuture<u64> {
-    let duration: Duration = time::Duration::from_millis(length_ms);
-    let now = SystemTime::now();
-    let mut interval = time::interval(time::Duration::from_secs(1));
-    let mut now_elapsed = 0;
-    async move {
-        while now.elapsed().expect("").as_secs() < duration.as_secs() {
-            // thread::sleep(Duration::from_secs(1));
+// #[no_mangle]
+// pub unsafe extern "C" fn start_timer_test(length_ms: u64, elapsed: *mut u64) -> FfiFuture<u64> {
+//     let duration: Duration = time::Duration::from_millis(length_ms);
+//     let now = SystemTime::now();
+//     let mut interval = time::interval(time::Duration::from_secs(1));
+//     let mut now_elapsed = 0;
+//     async move {
+//         while now.elapsed().expect("").as_secs() < duration.as_secs() {
+//             // thread::sleep(Duration::from_secs(1));
             
-            interval.tick().await;
+//             interval.tick().await;
             
-            now_elapsed = now.elapsed().expect("").as_secs();
-            *elapsed = now_elapsed;
-            // unsafe {
-            //     *elapsed = (now_elapsed * 1000) as c_uint;
-            // }
-            // println!("{}, {}", now_elapsed, *elapsed);
-        }
-        now_elapsed
-    }
-    .into_ffi()
-}
+//             now_elapsed = now.elapsed().expect("").as_secs();
+//             *elapsed = now_elapsed;
+//             // unsafe {
+//             //     *elapsed = (now_elapsed * 1000) as c_uint;
+//             // }
+//             // println!("{}, {}", now_elapsed, *elapsed);
+//         }
+//         now_elapsed
+//     }
+//     .into_ffi()
+// }
