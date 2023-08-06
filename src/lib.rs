@@ -13,6 +13,7 @@ use serde_json::json;
 use std::{thread};
 use std::time::{Duration, SystemTime};
 use tokio::time;
+use async_ffi::{FfiFuture, FutureExt};
 
 pub struct FullDevice {
     device: Device,
@@ -220,15 +221,63 @@ pub unsafe extern "C" fn turn_off_after(length_ms: u64, full_device: *const Full
     full_device_switch_off(full_device)
 }
 
-pub async fn start_timer(length_ms: u64, timer: &mut Timer) {
+#[no_mangle]
+pub unsafe extern "C" fn get_timer(length_ms: u64) -> *mut Timer {
+    let timer = Timer {
+        seconds: {
+            length_ms / 1000
+        }
+    };
+    Box::into_raw(Box::new(timer))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn poll_timer(timer: *const Timer) -> u64 {
+    let timer = &*timer;
+    timer.seconds
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn start_timer(length_ms: u64, timer: *mut Timer) -> bool {
+    let timer_obj = &mut * timer;
+    start_timer_async(length_ms, timer_obj);
+    true
+}
+
+pub fn start_timer_async(length_ms: u64, timer: &mut Timer) {
     let duration: Duration = time::Duration::from_millis(length_ms);
     let mut now = SystemTime::now();
     let end_time = now + duration;
     let mut interval = time::interval(time::Duration::from_secs(1));
 
     while now.elapsed().expect("").as_secs() < duration.as_secs() {
-        interval.tick().await;
+        // interval.tick().await;
+        thread::sleep(Duration::from_secs(1));
         timer.seconds = now.elapsed().expect("Woops wrong time").as_secs();
         println!("{}", timer.seconds);
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn start_timer_test(length_ms: u64, elapsed: *mut u64) -> FfiFuture<u64> {
+    let duration: Duration = time::Duration::from_millis(length_ms);
+    let now = SystemTime::now();
+    let mut interval = time::interval(time::Duration::from_secs(1));
+    let mut now_elapsed = 0;
+    async move {
+        while now.elapsed().expect("").as_secs() < duration.as_secs() {
+            // thread::sleep(Duration::from_secs(1));
+            
+            interval.tick().await;
+            
+            now_elapsed = now.elapsed().expect("").as_secs();
+            *elapsed = now_elapsed;
+            // unsafe {
+            //     *elapsed = (now_elapsed * 1000) as c_uint;
+            // }
+            // println!("{}, {}", now_elapsed, *elapsed);
+        }
+        now_elapsed
+    }
+    .into_ffi()
 }
