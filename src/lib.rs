@@ -58,7 +58,7 @@ pub extern "C" fn tplinker_discovery(len: *mut c_uint) -> *mut c_void {
     let mut device_data_objects: Vec<*mut _> = Vec::new();
     for (addr, data) in discover().unwrap() {
         let device = Device::from_data(addr, &data);
-        let sysinfo = data.sysinfo();
+        let sysinfo: &SysInfo = data.sysinfo();
         // let device_description = CString::new(format!("{}\t{}\t{}", addr, sysinfo.alias, sysinfo.hw_type)).unwrap();
         //let device_description: (CString, CString) = (CString::new(format!("{}", addr)).unwrap(), CString::new(format!("{}", sysinfo.alias)).unwrap());
         // let device_description: [CString; 2] = [CString::new(format!("{}", addr)).unwrap(), CString::new(format!("{}", sysinfo.alias)).unwrap()];
