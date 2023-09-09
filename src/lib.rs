@@ -14,6 +14,7 @@ use std::{thread};
 use std::time::{Duration, SystemTime};
 use tokio::time;
 use async_ffi::{FfiFuture, FutureExt};
+use mdns::{Error, Record, RecordKind};
 
 pub struct FullDevice {
     device: Device,
@@ -281,3 +282,19 @@ pub fn start_timer_async(length_ms: u64, timer: &mut Timer) {
 //     }
 //     .into_ffi()
 // }
+
+pub fn find_server() {
+    // TODO: Use "_energy_sync._tcp.local." as service name
+    let stream = mdns::discover::all();
+    while let Some(Ok(response)) = stream.next().await {
+        let addr = response.records()
+                            .filter_map(self::to_ip_addr)
+                            .next();
+
+        if let Some(addr) = addr {
+            println!("found cast device at {}", addr);
+        } else {
+            println!("cast device does not advertise address");
+        }
+    }
+}
