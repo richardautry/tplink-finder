@@ -14,7 +14,7 @@ use std::{thread};
 use std::time::{Duration, SystemTime};
 use tokio::time;
 use async_ffi::{FfiFuture, FutureExt};
-use mdns::{Error, Record, RecordKind};
+use mdns_sd::{ServiceDaemon, ServiceEvent};
 
 pub struct FullDevice {
     device: Device,
@@ -259,42 +259,35 @@ pub fn start_timer_async(length_ms: u64, timer: &mut Timer) {
     }
 }
 
-// #[no_mangle]
-// pub unsafe extern "C" fn start_timer_test(length_ms: u64, elapsed: *mut u64) -> FfiFuture<u64> {
-//     let duration: Duration = time::Duration::from_millis(length_ms);
-//     let now = SystemTime::now();
-//     let mut interval = time::interval(time::Duration::from_secs(1));
-//     let mut now_elapsed = 0;
-//     async move {
-//         while now.elapsed().expect("").as_secs() < duration.as_secs() {
-//             // thread::sleep(Duration::from_secs(1));
-            
-//             interval.tick().await;
-            
-//             now_elapsed = now.elapsed().expect("").as_secs();
-//             *elapsed = now_elapsed;
-//             // unsafe {
-//             //     *elapsed = (now_elapsed * 1000) as c_uint;
-//             // }
-//             // println!("{}, {}", now_elapsed, *elapsed);
-//         }
-//         now_elapsed
-//     }
-//     .into_ffi()
-// }
+#[no_mangle]
+pub unsafe extern "C" fn discover_services() -> bool {
+    _discover_services();
 
-pub fn find_server() {
-    // TODO: Use "_energy_sync._tcp.local." as service name
-    let stream = mdns::discover::all();
-    while let Some(Ok(response)) = stream.next().await {
-        let addr = response.records()
-                            .filter_map(self::to_ip_addr)
-                            .next();
+    true
+}
 
-        if let Some(addr) = addr {
-            println!("found cast device at {}", addr);
-        } else {
-            println!("cast device does not advertise address");
+fn _discover_services() {
+    // Create a daemon
+    let mdns = ServiceDaemon::new().expect("Failed to create daemon");
+
+    // Browse for a service type.
+    let service_type = "_energy_sync._tcp.local.";
+    let receiver = mdns.browse(service_type).expect("Couldn't browse");
+
+    // Receive the browse events in sync or async. Here is
+    // an example of using a thread. Users can call `receiver.recv_async().await`
+    // if running in async environment.
+    // std::thread::spawn(move || {
+    println!("Starting loop");
+    while let Ok(event) = receiver.recv() {
+        println!("OK");
+        match event {
+            ServiceEvent::ServiceResolved(info) => {
+                println!("Resolved a new service: {} {} {}", info.get_fullname(), info.get_hostname(), info.get_port());
+            }
+            other_event => {
+                println!("Received other event: {:?}", &other_event);
+            }
         }
-    }
+    };
 }

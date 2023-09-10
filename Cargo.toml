@@ -16,4 +16,4 @@ serde_json = "1.0.103"
 tplinker = "0.4.4"
 tokio = { version = "1", features = ["full"] }
 async-ffi = "0.4.1"
-mdns = "3.0.0"
+mdns-sd = "0.7.4"
